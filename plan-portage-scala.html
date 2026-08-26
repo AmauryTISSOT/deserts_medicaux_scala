@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HealthMap — Plan de portage Scala</title>
+<style>
+  :root{
+    --bg:#fbfaf8; --surface:#ffffff; --border:#e4e0d8; --text:#1f1d1a; --muted:#6b665e;
+    --accent:#b8453a; --accent-soft:#fdf0ee; --warn:#8a5a12; --warn-soft:#fdf5e6;
+    --code-bg:#f4f2ee;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#171614; --surface:#201f1c; --border:#35332e; --text:#eceae5; --muted:#a39d92;
+      --accent:#e8776a; --accent-soft:#2c1e1c; --warn:#d9ab63; --warn-soft:#2a2318;
+      --code-bg:#2a2825;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:56px 24px 96px}
+  header{border-bottom:2px solid var(--accent);padding-bottom:28px;margin-bottom:44px}
+  .eyebrow{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h1{font-size:2.1rem;line-height:1.2;margin:0 0 12px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:1.02rem;margin:0}
+  .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:.78rem;background:var(--surface);border:1px solid var(--border);
+    border-radius:999px;padding:4px 12px;color:var(--muted)}
+  .chip b{color:var(--text);font-weight:600}
+  h2{font-size:1.32rem;margin:52px 0 14px;letter-spacing:-.01em;padding-top:4px}
+  h3{font-size:1.02rem;margin:28px 0 8px}
+  p{margin:0 0 14px}
+  ul{margin:0 0 14px;padding-left:22px}
+  li{margin-bottom:7px}
+  code{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:.87em;
+    background:var(--code-bg);padding:2px 6px;border-radius:4px;border:1px solid var(--border)}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;
+    padding:18px 20px;overflow-x:auto;font-size:.84rem;line-height:1.55;margin:0 0 18px}
+  pre code{background:none;border:none;padding:0}
+  .callout{border-left:3px solid var(--accent);background:var(--accent-soft);
+    padding:16px 20px;border-radius:0 10px 10px 0;margin:0 0 20px}
+  .callout p:last-child{margin-bottom:0}
+  .callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+  .callout .lbl{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+    font-weight:700;color:var(--accent);display:block;margin-bottom:6px}
+  .callout.warn .lbl{color:var(--warn)}
+  .tablewrap{overflow-x:auto;margin:0 0 20px;border:1px solid var(--border);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:.9rem;background:var(--surface)}
+  th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  tr:last-child td{border-bottom:none}
+  .phase{display:flex;gap:18px;padding:18px 0;border-bottom:1px solid var(--border)}
+  .phase:last-child{border-bottom:none}
+  .pnum{flex:0 0 62px;font-size:.72rem;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--accent);padding-top:3px}
+  .pbody{flex:1;min-width:0}
+  .pbody h4{margin:0 0 5px;font-size:1rem}
+  .pbody p{margin:0;color:var(--muted);font-size:.93rem}
+  .pbody p + p{margin-top:6px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:0 0 20px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+  .card h4{margin:0 0 6px;font-size:.93rem}
+  .card p{margin:0;font-size:.87rem;color:var(--muted)}
+  .card .tag{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;display:block;margin-bottom:8px}
+  .lots{display:grid;gap:14px;margin:0 0 20px}
+  .lot{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:18px 20px;border-left:3px solid var(--accent)}
+  .lot-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:10px}
+  .lot-id{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+    color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:3px 8px}
+  .lot-head h4{margin:0;font-size:1.02rem;flex:1;min-width:180px}
+  .lot-phases{font-size:.76rem;color:var(--muted);white-space:nowrap}
+  .lot dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:.89rem}
+  .lot dt{color:var(--muted);font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;
+    font-weight:700;padding-top:4px;white-space:nowrap}
+  .lot dd{margin:0}
+  @media (max-width:560px){
+    .lot dl{grid-template-columns:1fr;gap:2px}
+    .lot dd{margin-bottom:8px}
+  }
+  footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--border);
+    color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">IPSSI · Sujet 4 · Note de cadrage technique</p>
+  <h1>HealthMap — portage de l'application Python vers Scala&nbsp;3</h1>
+  <p class="sub">Réimplémentation de l'application Streamlit <em>open_data_health_map</em> en Scala&nbsp;3 full-stack, avec Scala.js côté navigateur et DuckDB côté serveur.</p>
+  <div class="meta">
+    <span class="chip">Source&nbsp;: <b>Python / Streamlit</b></span>
+    <span class="chip">Cible&nbsp;: <b>Scala 3.3 LTS</b></span>
+    <span class="chip">Jeu de données&nbsp;: <b>432 015 lignes</b></span>
+    <span class="chip">Volume estimé&nbsp;: <b>~1 500–2 000 lignes</b></span>
+  </div>
+</header>
+
+<h2>1. Point de départ</h2>
+<p>Le dépôt source contient une application Streamlit d'environ mille lignes utiles&nbsp;: un fichier Parquet de <strong>432 015 professionnels de santé</strong> (colonnes <code>code_postal</code>, <code>commune</code>, <code>profession</code>, <code>nom</code>, <code>prenom</code>, <code>latitude</code>, <code>longitude</code>), quatre onglets — carte à points, choroplèthes par région et par département, page d'informations, assistant IA — des agrégations DuckDB/pandas et des cartes Plotly.</p>
+<p>Le dépôt cible est <strong>vide</strong>. Il s'agit donc d'une réimplémentation complète, et non d'une migration incrémentale&nbsp;: rien ne peut être porté fichier par fichier.</p>
+
+<div class="callout">
+  <span class="lbl">Contrainte structurante</span>
+  <p>Scala.js s'exécute dans le navigateur et ne sait pas lire du Parquet. Le «&nbsp;full-stack Scala.js&nbsp;» se traduit donc par un <strong>serveur JVM</strong> (accès aux données et API) et un <strong>client Scala.js</strong> (interface), reliés par un module <code>shared</code> compilé pour les deux plateformes. C'est ce module partagé qui apporte le typage de bout en bout — l'intérêt principal du choix.</p>
+</div>
+
+<h2>2. Architecture cible</h2>
+<pre><code>deserts_medicaux_scala/
+├─ build.sbt                    # cross-project shared / server / client
+├─ project/plugins.sbt          # sbt-scalajs, sbt-scalajs-crossproject
+├─ data/                        # parquet enrichi (7,5 Mo, versionné)
+├─ modules/
+│  ├─ shared/                   # Scala 3, JVM + JS : modèles, codecs, référentiels
+│  ├─ server/                   # JVM : http4s-ember, DuckDB JDBC, Ollama, assets
+│  └─ client/                   # Scala.js : Laminar, façades Leaflet / Chart.js
+└─ static/index.html</code></pre>
+
+<div class="cards">
+  <div class="card">
+    <span class="tag">shared</span>
+    <h4>Modèles et référentiels</h4>
+    <p><code>MapPoint</code>, <code>RegionCount</code>, <code>DeptCount</code>, <code>CoverageAnalysis</code>, <code>ChatResponse</code> et leurs codecs upickle. On y centralise aussi les tables aujourd'hui dupliquées dans le Python&nbsp;: département → région, noms de départements, symptômes → spécialités.</p>
+  </div>
+  <div class="card">
+    <span class="tag">server</span>
+    <h4>Données et API</h4>
+    <p>DuckDB en JDBC lit directement le Parquet — même moteur que l'original. Agrégations en SQL, résultats mémoïsés au démarrage, exposition en REST via http4s.</p>
+  </div>
+  <div class="card">
+    <span class="tag">client</span>
+    <h4>Interface réactive</h4>
+    <p>Laminar pour la structure et l'état (<code>Var</code> / <code>Signal</code>), façades Scala.js vers Leaflet pour les cartes et Chart.js pour les graphiques.</p>
+  </div>
+</div>
+
+<h3>Surface d'API</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Endpoint</th><th>Remplace</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /api/professions</code></td><td>le <code>multiselect</code> présent sur les deux onglets</td></tr>
+    <tr><td><code>GET /api/map?professions=</code></td><td>agrégat par code postal (~6 000 points)</td></tr>
+    <tr><td><code>GET /api/regions?professions=</code></td><td>choroplèthe par région</td></tr>
+    <tr><td><code>GET /api/departements?professions=</code></td><td>choroplèthe par département</td></tr>
+    <tr><td><code>GET /api/top-communes?professions=&amp;limit=</code></td><td>classement des 10 communes les mieux dotées</td></tr>
+    <tr><td><code>GET /api/coverage/:dept</code></td><td><code>analyze_region_coverage</code></td></tr>
+    <tr><td><code>POST /api/chat</code></td><td><code>generate_response</code></td></tr>
+    <tr><td><code>GET /geo/*.geojson</code></td><td>proxy et cache local des GeoJSON — supprime le <code>requests.get</code> rejoué à chaque interaction et évite le blocage CORS côté navigateur</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>3. Déroulé par phases</h2>
+
+<div class="phase"><div class="pnum">Phase 0</div><div class="pbody">
+  <h4>Chaîne d'outils</h4>
+  <p>JDK 21 Temurin et sbt installés via winget, puis vérification de <code>sbt --version</code>. Node et npm sont déjà présents sur le poste pour le bundling Scala.js.</p>
+</div></div>
+
+<div class="phase"><div class="pnum">Phase 1</div><div class="pbody">
+  <h4>Squelette de build</h4>
+  <p><code>build.sbt</code> en cross-project sur Scala 3.3 LTS, <code>fastLinkJS</code> côté client, et une tâche sbt unique qui lance le serveur avec rechargement du client.</p>
+  <p><strong>Jalon&nbsp;:</strong> une page servie sur <code>localhost:8080</code> affichant un élément rendu par Laminar.</p>
+</div></div>
+
+<div class="phase"><div class="pnum">Phase 2</div><div class="pbody">
+  <h4>Données</h4>
+  <p>Copie de <code>fichier_professionnels_avec_coords.parquet</code> (7,5 Mo) dans <code>data/</code>. Le JSON des communes pèse <strong>62 Mo</strong> et n'a pas sa place dans Git&nbsp;: <code>pipeline/fetcher.py</code> est porté en un job Scala optionnel (<code>sbt pipeline/run</code>) capable de régénérer l'enrichissement depuis les sources brutes, celles-ci restant ignorées par Git.</p>
+</div></div>
+
+<div class="phase"><div class="pnum">Phase 3</div><div class="pbody">
+  <h4>Couche données serveur</h4>
+  <p><code>ProfessionalRepository</code> au-dessus de DuckDB JDBC, avec <code>read_parquet</code> direct et agrégations en SQL. Les résultats sont mémoïsés au démarrage&nbsp;: l'application Python rechargeait le Parquet à chaque onglet et à chaque interaction.</p>
+</div></div>
+
+<div class="phase"><div class="pnum">Phase 4</div><div class="pbody">
+  <h4>API http4s</h4>
+  <p>Mise en place des routes ci-dessus, sérialisation par les codecs du module <code>shared</code>, service des fichiers statiques et du bundle JavaScript.</p>
+</div></div>
+
+<div class="phase"><div class="pnum">Phase 5</div><div class="pbody">
+  <h4>Client Laminar</h4>
+  <p>Structure à quatre onglets, état réactif pour le filtre profession, appels d'API typés grâce aux modèles partagés, indicateurs de chargement.</p>
+</div></div>
+
+<div class="phase"><div class="pnum">Phase 6</div><div class="pbody">
+  <h4>Cartographie</h4>
+  <p>Façade Scala.js vers Leaflet&nbsp;: couche de points avec clustering — l'équivalent du <code>scatter_mapbox</code> sur 6 000 points — couches choroplèthes région et département avec échelle de couleur et légende, fond de carte OpenStreetMap.</p>
+  <p><strong>Phase la plus lourde&nbsp;:</strong> Plotly fournissait ces cartes clés en main, il faut ici les construire.</p>
+</div></div>
+
+<div class="phase"><div class="pnum">Phase 7</div><div class="pbody">
+  <h4>Graphiques et tableaux</h4>
+  <p>Classement des 10 communes les mieux dotées, tableaux triables par région et par département, histogramme départemental.</p>
+</div></div>
+
+<div class="phase"><div class="pnum">Phase 8</div><div class="pbody">
+  <h4>Assistant IA</h4>
+  <p>Portage de <code>HealthMapChatbot</code>&nbsp;: extraction des symptômes, correspondance vers les spécialités, analyse de la couverture départementale. Client HTTP vers Ollama (<code>http://localhost:11434</code>, modèle <code>mistral</code>) avec les mêmes messages d'erreur en cas d'indisponibilité, et interface d'onglet avec historique.</p>
+</div></div>
+
+<div class="phase"><div class="pnum">Phase 9</div><div class="pbody">
+  <h4>Packaging</h4>
+  <p><code>sbt-native-packager</code> pour un lancement en une commande, README (installation, lancement, sources de données, équipe), <code>.gitignore</code> Scala complété.</p>
+</div></div>
+
+<h2>4. Anomalies de l'existant</h2>
+<p>Relevées à la lecture du code source. Elles sont corrigées au passage plutôt que reproduites à l'identique.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Emplacement</th><th>Constat</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>app_streamlit.py:305</code></td>
+      <td><code>get_dept_from_cp</code> teste <code>cp_str.startswith("2A")</code>, alors que les codes postaux corses sont numériques (<code>20xxx</code>)&nbsp;: <strong>la Corse n'apparaît jamais</strong> sur la choroplèthe départementale. <code>utils/data.py</code> applique par ailleurs une logique différente et incompatible (<code>"2A/2B"</code>).</td>
+    </tr>
+    <tr>
+      <td><code>app_streamlit.py</code> · <code>dept_names</code></td>
+      <td><code>"79"</code> est libellé «&nbsp;Nièvre&nbsp;» au lieu de «&nbsp;Deux-Sèvres&nbsp;» — <code>"58"</code> porte déjà ce nom.</td>
+    </tr>
+    <tr>
+      <td><code>utils/charts.py</code></td>
+      <td><code>create_map_chart</code> référence des colonnes météorologiques (<code>summary_current_temp</code>) absentes du jeu de données&nbsp;: code mort provenant d'un autre projet. Non porté.</td>
+    </tr>
+    <tr>
+      <td><code>utils/geo.py</code>, <code>pipeline/</code></td>
+      <td><code>geo.py</code> est commenté à 90&nbsp;%&nbsp;; <code>main.py</code>, <code>storage.py</code> et <code>transformer.py</code> sont vides.</td>
+    </tr>
+    <tr>
+      <td><code>app_streamlit.py</code></td>
+      <td><code>load_data()</code> est appelé trois fois sans <code>@st.cache_data</code>, rechargeant l'intégralité du Parquet à chaque rerun.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>5. Point à trancher en équipe</h2>
+<div class="callout warn">
+  <span class="lbl">Décision produit</span>
+  <p>Le projet s'intitule «&nbsp;déserts médicaux&nbsp;», mais l'application ne calcule que des <strong>effectifs bruts</strong>&nbsp;: Paris arrive en tête simplement parce qu'elle est peuplée. Une mesure réelle de désert médical suppose une <strong>densité pour 100 000 habitants</strong>. Le JSON des communes contient vraisemblablement la population, ce qui permettrait d'ajouter l'indicateur en phase 7.</p>
+  <p>Le portage part par défaut sur un comportement identique à l'existant. Cet ajout reste à valider ensemble — c'est l'argument le plus solide en soutenance.</p>
+</div>
+
+<h2>6. Répartition du travail</h2>
+<p>Cinq lots, découpés pour que chacun soit propriétaire de fichiers distincts&nbsp;: les conflits de fusion restent ainsi marginaux. Chaque lot regroupe des phases cohérentes et se termine par un livrable vérifiable indépendamment.</p>
+
+<div class="callout warn">
+  <span class="lbl">Prérequis au parallélisme</span>
+  <p>Deux verrous conditionnent tout le reste et doivent tomber en premier&nbsp;: le <strong>squelette de build</strong> (lot&nbsp;A) sans lequel personne ne compile, et le <strong>contrat d'API</strong> — modèles et codecs du module <code>shared</code>, plus la liste figée des endpoints (lot&nbsp;C). Une fois ces deux points livrés, les lots B, C, D et E avancent réellement en parallèle&nbsp;; les lots D et E travaillent sur des réponses simulées tant que le serveur n'est pas branché.</p>
+</div>
+
+<div class="lots">
+
+  <div class="lot">
+    <div class="lot-head">
+      <span class="lot-id">Lot A</span>
+      <h4>Socle, build et packaging</h4>
+      <span class="lot-phases">Phases 0 · 1 · 9</span>
+    </div>
+    <dl>
+      <dt>Périmètre</dt><dd>Chaîne d'outils (JDK, sbt), <code>build.sbt</code> en cross-project, plugins Scala.js, tâche de lancement unique, <code>sbt-native-packager</code>, README, <code>.gitignore</code>.</dd>
+      <dt>Fichiers</dt><dd><code>build.sbt</code>, <code>project/</code>, <code>README.md</code>, <code>.gitignore</code></dd>
+      <dt>Livrable</dt><dd>Un <code>git clone</code> suivi d'une commande suffit à démarrer l'application sur <code>localhost:8080</code>.</dd>
+      <dt>Charge</dt><dd>Faible en volume de code, mais <strong>bloquant pour les quatre autres lots</strong>&nbsp;: à traiter en priorité absolue. Une fois livré, ce lot vient en renfort sur D ou E jusqu'à la phase&nbsp;9.</dd>
+    </dl>
+  </div>
+
+  <div class="lot">
+    <div class="lot-head">
+      <span class="lot-id">Lot B</span>
+      <h4>Données et pipeline</h4>
+      <span class="lot-phases">Phases 2 · 3</span>
+    </div>
+    <dl>
+      <dt>Périmètre</dt><dd>Intégration du Parquet, <code>ProfessionalRepository</code> sur DuckDB JDBC, requêtes SQL d'agrégation, mémoïsation au démarrage, job de régénération porté depuis <code>fetcher.py</code>.</dd>
+      <dt>Fichiers</dt><dd><code>modules/server/…/data/</code>, <code>modules/pipeline/</code>, <code>data/</code></dd>
+      <dt>Livrable</dt><dd>Des tests qui vérifient chaque agrégat&nbsp;: totaux par profession, par région, par département, Top 10.</dd>
+      <dt>Points d'attention</dt><dd>Porte la correction des anomalies de la section&nbsp;4 — notamment <strong>la Corse</strong> et le libellé du département <code>79</code> — et impose une logique unique de conversion code postal → département, là où le Python en avait deux contradictoires.</dd>
+    </dl>
+  </div>
+
+  <div class="lot">
+    <div class="lot-head">
+      <span class="lot-id">Lot C</span>
+      <h4>Modèles partagés et API</h4>
+      <span class="lot-phases">Phase 4 + module <code>shared</code></span>
+    </div>
+    <dl>
+      <dt>Périmètre</dt><dd>Modèles et codecs upickle, référentiels partagés (département → région, noms de départements, symptômes → spécialités), routes http4s, proxy et cache des GeoJSON, service des assets.</dd>
+      <dt>Fichiers</dt><dd><code>modules/shared/</code>, <code>modules/server/…/api/</code></dd>
+      <dt>Livrable</dt><dd>Tous les endpoints répondent, d'abord avec des données factices puis branchés sur le lot&nbsp;B.</dd>
+      <dt>Points d'attention</dt><dd>Le module <code>shared</code> est <strong>le point de contact de tous les lots</strong>&nbsp;: il doit être livré en premier, même incomplet, et toute évolution de sa signature est annoncée à l'équipe.</dd>
+    </dl>
+  </div>
+
+  <div class="lot">
+    <div class="lot-head">
+      <span class="lot-id">Lot D</span>
+      <h4>Cartographie</h4>
+      <span class="lot-phases">Phase 6</span>
+    </div>
+    <dl>
+      <dt>Périmètre</dt><dd>Façade Scala.js vers Leaflet, couche de points avec clustering sur ~6 000 positions, couches choroplèthes région et département, échelle de couleur, légende, infobulles, fond OpenStreetMap.</dd>
+      <dt>Fichiers</dt><dd><code>modules/client/…/map/</code>, <code>modules/client/…/facade/</code></dd>
+      <dt>Livrable</dt><dd>Trois composants de carte autonomes, alimentés par une liste de modèles et intégrables tels quels dans les onglets.</dd>
+      <dt>Charge</dt><dd><strong>Le lot le plus lourd du projet.</strong> Plotly fournissait ces cartes clés en main&nbsp;; il faut ici écrire la façade et la logique de rendu. À démarrer aussitôt après le lot&nbsp;A, sur données simulées.</dd>
+    </dl>
+  </div>
+
+  <div class="lot">
+    <div class="lot-head">
+      <span class="lot-id">Lot E</span>
+      <h4>Interface, graphiques et assistant IA</h4>
+      <span class="lot-phases">Phases 5 · 7 · 8</span>
+    </div>
+    <dl>
+      <dt>Périmètre</dt><dd>Structure à quatre onglets en Laminar, filtre profession et état réactif, appels d'API typés, Top 10, tableaux triables, histogramme départemental, portage de <code>HealthMapChatbot</code> et client Ollama.</dd>
+      <dt>Fichiers</dt><dd><code>modules/client/…/ui/</code>, <code>modules/client/…/chat/</code>, <code>modules/server/…/chat/</code></dd>
+      <dt>Livrable</dt><dd>Application navigable de bout en bout, cartes du lot&nbsp;D insérées dans les emplacements prévus.</dd>
+      <dt>Points d'attention</dt><dd>Livrer <strong>la coquille des onglets en tout premier</strong>&nbsp;: c'est elle qui accueille les composants du lot&nbsp;D. La partie assistant IA est fonctionnellement indépendante et peut être menée en dernier, voire en parallèle par la même personne.</dd>
+    </dl>
+  </div>
+
+</div>
+
+<h3>Séquencement</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Jalon</th><th>Qui</th><th>Condition de sortie</th></tr></thead>
+  <tbody>
+    <tr><td>J1 — Déblocage</td><td>A, puis C</td><td>Le projet compile chez les cinq&nbsp;; les modèles de <code>shared</code> et la liste des endpoints sont figés.</td></tr>
+    <tr><td>J2 — Coquille</td><td>E</td><td>Les quatre onglets existent et s'affichent, vides, avec le filtre profession en place.</td></tr>
+    <tr><td>J3 — Parallèle</td><td>B, C, D, E</td><td>Chaque lot livre son périmètre&nbsp;; D et E travaillent sur données simulées jusqu'à ce que B et C soient branchés.</td></tr>
+    <tr><td>J4 — Intégration</td><td>Toute l'équipe</td><td>Bascule des données simulées vers l'API réelle, recette des quatre onglets, correction des écarts.</td></tr>
+    <tr><td>J5 — Livraison</td><td>A</td><td>Packaging, README, relecture croisée, préparation de la soutenance.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Règles de collaboration</h3>
+<ul>
+  <li>Une branche par lot (<code>lot-a-build</code>, <code>lot-b-data</code>, …), fusionnée dans <code>main</code> par petites incréments plutôt qu'en une fois à la fin.</li>
+  <li>Le module <code>shared</code> n'est modifié que par le lot&nbsp;C&nbsp;; toute demande d'ajout passe par lui, ce qui évite les conflits sur le fichier le plus transversal du projet.</li>
+  <li>Les lots D et E consomment des jeux de données factices tant que l'API réelle n'est pas prête — aucune attente mutuelle.</li>
+  <li><code>main</code> doit compiler à tout moment&nbsp;: c'est la branche de démonstration.</li>
+</ul>
+
+<div class="callout">
+  <span class="lbl">Note d'effectif</span>
+  <p>Le README du projet source recense <strong>quatre membres</strong> (Adrien Fouquet, Amaury Tissot, Léa Druffin, Satya Minguez), alors que ce découpage prévoit cinq lots. À cinq, l'attribution est directe. À quatre, la solution la plus naturelle est de confier les lots&nbsp;A et&nbsp;C à la même personne — ils s'enchaînent chronologiquement et partagent la même exigence de livraison rapide.</p>
+</div>
+
+<h2>7. Décisions techniques actées</h2>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Sujet</th><th>Choix</th><th>Motif</th></tr></thead>
+  <tbody>
+    <tr><td>Interface</td><td>Scala.js + Laminar</td><td>Tout en Scala, typage partagé entre client et serveur</td></tr>
+    <tr><td>Moteur de données</td><td>DuckDB via JDBC</td><td>Même moteur que l'original, lecture Parquet et SQL directs, aucun cluster</td></tr>
+    <tr><td>Assistant IA</td><td>Ollama local, à l'identique</td><td>Conserve la fonctionnalité et le modèle <code>mistral</code> existants</td></tr>
+    <tr><td>Build</td><td>sbt, données versionnées</td><td>Standard de l'écosystème&nbsp;; 7,5 Mo restent acceptables dans Git</td></tr>
+  </tbody>
+</table>
+</div>
+
+<footer>
+  Note de cadrage — projet HealthMap, équipe Adrien Fouquet, Amaury Tissot, Léa Druffin, Satya Minguez.
+</footer>
+
+</div>
+</body>
+</html>

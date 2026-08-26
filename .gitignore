@@ -1,6 +1,27 @@
+# Scala / sbt
 *.class
 *.tasty
 *.log
+target/
+project/target/
+project/project/
+.bsp/
+.bloop/
+.metals/
+.scala-build/
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# Bundle Scala.js généré par client/fastLinkJS
+static/js/
+
+# Sources brutes du pipeline : le JSON des communes pèse 62 Mo.
+# Seul data/*.parquet (7,5 Mo) est versionné.
+data/raw/
+data/geo/
+
+# JVM
 hs_err_pid*
+*.stackdump
+
+# Éditeurs
+.idea/
+.vscode/
