@@ -77,4 +77,4 @@ lot E remplace `ChatService.rulesBased` par le client Ollama.
 
 ## Équipe
 
-Adrien Fouquet · Amaury Tissot · Léa Druffin · Satya Minguez
+Adrien Fouquet · Amaury Tissot · Léa Druffin · Satya Minguez · Frédéric FERNANDES DA COSTA
