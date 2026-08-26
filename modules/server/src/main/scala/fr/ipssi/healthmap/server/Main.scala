@@ -8,26 +8,29 @@ import org.http4s.server.middleware.{ErrorAction, Logger}
 
 import fr.ipssi.healthmap.server.api.ApiRoutes
 import fr.ipssi.healthmap.server.chat.ChatService
-import fr.ipssi.healthmap.server.data.DuckDbProfessionalSource
+import fr.ipssi.healthmap.server.data.ProfessionalRepository
 import fr.ipssi.healthmap.server.geo.GeoJsonCache
 
 /** Point d'entrée du serveur.
   *
-  * Lot B : la source de données est désormais `DuckDbProfessionalSource`, qui
-  * lit `data/fichier_professionnels_avec_coords.parquet` (432 015 lignes) ;
-  * les routes n'ont pas changé. Le lot E remplace `ChatService.rulesBased`
-  * par le client Ollama.
+  * Lot B : la source de données est désormais `ProfessionalRepository`, qui
+  * lit `data/fichier_professionnels_avec_coords.parquet` et
+  * `data/communes.parquet` (département/région issus de la jointure, jamais
+  * dérivés du code postal) ; les routes n'ont pas changé. Le lot E remplace
+  * `ChatService.rulesBased` par le client Ollama.
   */
 object Main extends IOApp:
 
   private val defaultHost: Host = host"0.0.0.0"
   private val defaultPort: Port = port"8080"
 
-  private val dataPath = java.nio.file.Path.of("data", "fichier_professionnels_avec_coords.parquet")
+  private val professionalsPath = java.nio.file.Path.of("data", "fichier_professionnels_avec_coords.parquet")
+  private val communesPath      = java.nio.file.Path.of("data", "communes.parquet")
 
   def run(args: List[String]): IO[ExitCode] =
     for
-      source <- IO.blocking(DuckDbProfessionalSource.load(dataPath))
+      source <- IO.blocking(ProfessionalRepository.load(professionalsPath, communesPath))
+      _ <- IO.println(source.joinStats.toString)
       chat: ChatService = ChatService.rulesBased(source)
       geo               = GeoJsonCache()
 
