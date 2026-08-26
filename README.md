@@ -105,6 +105,20 @@ La commande imprime des diagnostics de sanité (nombre de communes, codes
 postaux distincts, communes corses, population totale) en face des valeurs
 attendues, avant d'écraser `data/communes.parquet`.
 
+## Régénérer STATISTIQUES_JOINTURE.md
+
+```bash
+sbt "server/runMain fr.ipssi.healthmap.server.data.pipeline.GenerateJoinReport"
+```
+
+Écrit `STATISTIQUES_JOINTURE.md` à la racine (versionné, comme les Parquet) :
+qualité de la jointure professionnels ↔ communes — total, correspondance
+exacte, repli, non résolu, en valeur et en pourcentage — sur le grain résolu
+(432 015) et sur le grain géolocalisé (353 414). À rejouer après une mise à
+jour de `data/fichier_professionnels_avec_coords.parquet` ou
+`data/communes.parquet`, pas à chaque exécution du serveur : sinon seule la
+date de mesure change dans le diff, pour rien.
+
 ## État
 
 Lots A (socle et build), B (données DuckDB) et C (modèles partagés et API)

@@ -246,7 +246,9 @@ final class ProfessionalRepository private (conn: Connection) extends Profession
   private def pour100k(effectif: Int, population: Long): Double =
     if population <= 0 then 0.0 else math.round(effectif * 100000.0 * 10 / population) / 10.0
 
-  /** Qualité de la jointure professionnels ↔ communes — le chiffre à citer. */
+  /** Qualité de la jointure professionnels ↔ communes — le chiffre à citer.
+    * Porte sur le grain large (432 015, GPS ou non ; voir la doc de tête).
+    */
   val joinStats: JoinStats =
     queryOne(
       """SELECT
@@ -255,6 +257,28 @@ final class ProfessionalRepository private (conn: Connection) extends Profession
         |  SUM(effectif) FILTER (WHERE match_type = 'fallback') AS fallback_n,
         |  SUM(effectif) FILTER (WHERE match_type = 'none') AS unresolved_n
         |FROM professionals_resolved""".stripMargin
+    ) { rs =>
+      JoinStats(rs.getLong("total"), rs.getLong("exact_n"), rs.getLong("fallback_n"), rs.getLong("unresolved_n"))
+    }.getOrElse(JoinStats(0, 0, 0, 0))
+
+  /** Même mesure que `joinStats`, restreinte aux 353 414 professionnels
+    * géolocalisés (grain de la carte et du classement des communes) : la
+    * qualité de la jointure y est mesurée séparément, car ce sous-ensemble
+    * n'a pas nécessairement le même profil de correspondance que l'ensemble
+    * du grain large. Vérifié indépendamment (recomptage sur les lignes
+    * brutes de `professionals`, hors `prof_grouped`) : les 2 017
+    * professionnels non résolus du grain large sont tous parmi les 78 601
+    * sans GPS, aucun parmi les 353 414 géolocalisés.
+    */
+  val joinStatsGeolocalise: JoinStats =
+    queryOne(
+      """SELECT
+        |  SUM(pg.effectif) AS total,
+        |  SUM(pg.effectif) FILTER (WHERE r.match_type = 'exact') AS exact_n,
+        |  SUM(pg.effectif) FILTER (WHERE r.match_type = 'fallback') AS fallback_n,
+        |  SUM(pg.effectif) FILTER (WHERE r.match_type = 'none') AS unresolved_n
+        |FROM prof_grouped pg
+        |JOIN resolution r ON r.code_postal = pg.code_postal AND r.commune = pg.commune""".stripMargin
     ) { rs =>
       JoinStats(rs.getLong("total"), rs.getLong("exact_n"), rs.getLong("fallback_n"), rs.getLong("unresolved_n"))
     }.getOrElse(JoinStats(0, 0, 0, 0))
