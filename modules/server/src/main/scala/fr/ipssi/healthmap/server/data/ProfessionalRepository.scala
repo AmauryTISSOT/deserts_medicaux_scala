@@ -17,14 +17,26 @@ import java.sql.{Connection, DriverManager, ResultSet}
   *
   * Deux grains, deux totaux — à ne pas confondre côté client (lot E) :
   *   - `prof_grouped` (353 414 professionnels **géolocalisés**, GPS non nul,
-  *     comme `load_data()` côté Python) : source de `professions`, `total`,
-  *     `mapPoints`, `topCommunes`, qui ont besoin d'un point GPS.
-  *   - `prof_all_grouped` (jusqu'à 432 015, GPS ou non) : source de
+  *     comme `load_data()` côté Python) : source de `mapPoints` et
+  *     `topCommunes`, qui ont besoin d'un point GPS.
+  *   - `professionals_resolved` filtré sur les correspondances effectives
+  *     (`match_type != 'none'`, 429 998 professionnels rattachés à une
+  *     commune réelle, GPS ou non) : source de `professions`, `total`,
   *     `byRegion`, `byDepartement`, `coverage`, `densityBy*`, qui n'ont besoin
-  *     que de la commune résolue. Mesuré : 97,4 % des 78 601 professionnels
-  *     sans GPS se résolvent tout de même à une commune ; les exclure de ces
-  *     agrégats aurait été une perte sèche sans rapport avec la qualité de la
-  *     jointure. `total()`/`joinStats.total` diffèrent donc légitimement.
+  *     que de la commune résolue, pas d'un point GPS. Mesuré : 97,4 % des
+  *     78 601 professionnels sans GPS se résolvent tout de même à une
+  *     commune ; les exclure de ces agrégats aurait été une perte sèche sans
+  *     rapport avec la qualité de la jointure. Les 2 017 professionnels non
+  *     résolus (`match_type = 'none'`, 0,47 %) n'appartiennent en revanche à
+  *     aucun territoire connu : les compter dans ce référentiel reviendrait à
+  *     affirmer qu'ils exercent quelque part, alors que la jointure conclut
+  *     l'inverse. Leur place est dans `joinStats`, qui mesure la qualité de
+  *     la jointure, pas dans la donnée métier.
+  *
+  *   `professions`/`total`/`byRegion`/`byDepartement`/`coverage`/`densityBy*`
+  *   sortent donc tous du même grain et s'additionnent exactement (429 998).
+  *   `mapPoints`/`topCommunes` restent sur le grain géolocalisé et
+  *   afficheront des totaux inférieurs (353 414) — c'est attendu, pas un bug.
   *
   * Tous les agrégats (`agg_*`) sont calculés une seule fois à la
   * construction. Les méthodes exposées ne font ensuite que filtrer/
@@ -316,9 +328,10 @@ object ProfessionalRepository:
     // par professionnel, seulement de la commune résolue.
     //
     // Deux totaux distincts en découlent, à ne pas confondre dans l'IHM
-    // (lot E) : l'effectif géolocalisé (`total`/`professions`, 353 414 — carte
-    // et top communes) et l'effectif résolu (`joinStats.exact+fallback`,
-    // jusqu'à 432 015 — région/département/couverture/densité).
+    // (lot E) : l'effectif géolocalisé (`mapPoints`/`topCommunes`, 353 414)
+    // et l'effectif résolu hors non-résolus (`professions`/`total`/région/
+    // département/couverture/densité, 429 998 — voir `professionals_resolved`
+    // plus bas).
     exec(
       s"""CREATE TABLE prof_all_grouped AS
          |SELECT code_postal, commune, $normCommune AS commune_norm,
@@ -330,7 +343,6 @@ object ProfessionalRepository:
          |         COALESCE(profession, 'Profession inconnue')""".stripMargin
     )
 
-    exec("CREATE TABLE agg_profession AS SELECT profession, SUM(effectif) AS effectif FROM prof_grouped GROUP BY profession")
     exec("CREATE TABLE agg_map AS SELECT code_postal, commune, latitude, longitude, profession, effectif FROM prof_grouped")
     exec(
       """CREATE TABLE agg_commune AS
@@ -429,6 +441,18 @@ object ProfessionalRepository:
         |       r.population AS commune_population, r.grille_densite_texte, r.match_type
         |FROM prof_all_grouped pg
         |JOIN resolution r ON r.code_postal = pg.code_postal AND r.commune = pg.commune""".stripMargin
+    )
+
+    // Référentiel des professions : grain résolu hors non-résolus, comme
+    // agg_region/agg_departement ci-dessous — pas prof_grouped (grain
+    // géolocalisé, réservé à la carte) ni prof_all_grouped brut (inclurait
+    // les 2 017 professionnels sans territoire connu, voir doc de tête).
+    exec(
+      """CREATE TABLE agg_profession AS
+        |SELECT profession, SUM(effectif) AS effectif
+        |FROM professionals_resolved
+        |WHERE match_type != 'none'
+        |GROUP BY profession""".stripMargin
     )
 
     exec(

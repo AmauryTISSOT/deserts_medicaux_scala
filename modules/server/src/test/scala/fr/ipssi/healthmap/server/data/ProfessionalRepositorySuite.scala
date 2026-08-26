@@ -28,12 +28,15 @@ class ProfessionalRepositorySuite extends munit.FunSuite:
     finally conn.close()
   }
 
-  test("le total servi (professions/total) correspond aux 353 414 professionnels géolocalisés") {
-    // 432 015 lignes brutes moins 78 601 sans coordonnées GPS, comme
-    // `load_data()` côté Python (dropna sur latitude/longitude avant tout
-    // calcul, y compris le total et la liste des professions).
-    assertEquals(repo.total(Set.empty), 353414)
-    assertEquals(repo.professions.map(_.effectif).sum, 353414)
+  test("le total servi (professions/total) correspond aux 429 998 professionnels résolus à une commune") {
+    // Grain résolu hors non-résolus (`professionals_resolved WHERE
+    // match_type != 'none'`), pas le grain géolocalisé de `load_data()` côté
+    // Python : `professions`/`total` sont un référentiel métier (« combien de
+    // tel professionnel exercent en France »), pas un sous-produit de la
+    // disponibilité des coordonnées GPS. Voir la doc de tête de
+    // ProfessionalRepository.
+    assertEquals(repo.total(Set.empty), 429998)
+    assertEquals(repo.professions.map(_.effectif).sum, 429998)
   }
 
   test("la liste des professions est triée par effectif décroissant") {
@@ -82,15 +85,31 @@ class ProfessionalRepositorySuite extends munit.FunSuite:
     assertEquals(stats.total, 432015L)
   }
 
-  test("l'effectif géolocalisé (carte) et l'effectif résolu (région/département) sont deux totaux distincts, l'un incluant l'autre") {
-    val geolocalise = repo.total(Set.empty)
-    val resolu = repo.joinStats.exact + repo.joinStats.fallback
-    assertEquals(geolocalise, 353414)
+  test("l'effectif géolocalisé (carte) et l'effectif résolu (professions/région/département) sont deux totaux distincts, l'un incluant l'autre") {
+    // Depuis la bascule de `agg_profession` sur le grain résolu, `total()`
+    // porte lui-même l'effectif résolu (429 998) : le géolocalisé (353 414)
+    // ne s'obtient plus par `total()` mais en sommant `mapPoints`, seule vue
+    // restée sur `prof_grouped`.
+    val geolocalise = repo.mapPoints(Set.empty).map(_.nombrePros.toLong).sum
+    val resolu = repo.total(Set.empty).toLong
+    assertEquals(geolocalise, 353414L)
     assertEquals(resolu, 429998L)
+    assertEquals(resolu, repo.joinStats.exact + repo.joinStats.fallback)
     assert(resolu > geolocalise, "l'effectif résolu doit être strictement supérieur au géolocalisé")
-    // Cohérence croisée : la somme par département doit correspondre à
-    // l'effectif résolu, pas au seul effectif géolocalisé.
-    assertEquals(repo.byDepartement(Set.empty).map(_.nombrePros.toLong).sum, resolu)
+  }
+
+  test("professions, byRegion, byDepartement et total s'additionnent tous exactement au même grain résolu (429 998)") {
+    // Verrouille la décision de la tâche 1 bis : agg_profession bascule sur
+    // professionals_resolved (match_type != 'none'), le même grain que
+    // byRegion/byDepartement — pas prof_grouped (géolocalisé, 353 414) ni
+    // prof_all_grouped brut (inclurait les 2 017 non-résolus, 432 015). Un
+    // effectif affiché à côté d'un libellé de profession doit être
+    // vérifiable dans les vues région/département, et réciproquement.
+    val total = repo.total(Set.empty).toLong
+    assertEquals(total, 429998L)
+    assertEquals(repo.professions.map(_.effectif.toLong).sum, total)
+    assertEquals(repo.byRegion(Set.empty).map(_.nombrePros.toLong).sum, total)
+    assertEquals(repo.byDepartement(Set.empty).map(_.nombrePros.toLong).sum, total)
   }
 
   test("Paris, Lyon et Marseille sont rattachés à leur département/région réels (arrondissementsPLM)") {
