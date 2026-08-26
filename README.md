@@ -24,6 +24,33 @@ sbt client/fastLinkJS     # bundle de développement dans static/js
 sbt build                 # bundle optimisé + archive distribuable
 ```
 
+### « sbt : commande introuvable » sous Windows
+
+L'installateur ajoute `sbt` et le JDK au `PATH` machine, mais les processus déjà
+lancés gardent leur ancien environnement : un terminal ouvert avant l'installation
+ne verra pas `sbt`. Le rouvrir suffit dans la plupart des cas ; pour recharger le
+`PATH` dans la session courante sans rien fermer :
+
+```powershell
+$env:JAVA_HOME = [Environment]::GetEnvironmentVariable('JAVA_HOME', 'Machine')
+$env:PATH = [Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
+            [Environment]::GetEnvironmentVariable('PATH', 'User')
+```
+
+Si `Get-Command sbt` reste muet après réouverture du terminal, l'installation n'a
+pas touché au `PATH` : ajouter le dossier au `PATH` utilisateur, une fois pour
+toutes (l'écriture en `ExpandString` préserve les `%USERPROFILE%` déjà présents).
+
+```powershell
+$bin = 'C:\Program Files (x86)\sbt\bin'
+$path = (Get-Item HKCU:\Environment).GetValue('PATH', '', 'DoNotExpandEnvironmentNames')
+if ($path -split ';' -notcontains $bin) {
+  Set-ItemProperty HKCU:\Environment PATH "$path;$bin" -Type ExpandString
+}
+```
+
+Le nouveau `PATH` n'est visible que par les terminaux ouverts ensuite.
+
 ## Architecture
 
 ```
