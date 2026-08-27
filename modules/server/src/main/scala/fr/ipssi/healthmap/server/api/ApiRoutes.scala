@@ -22,7 +22,10 @@ object ApiRoutes:
   private object ProfessionsParam extends OptionalQueryParamDecoderMatcher[String]("professions")
   private object LimitParam       extends OptionalQueryParamDecoderMatcher[Int]("limit")
 
-  private val json = `Content-Type`(MediaType.application.json)
+  // Le charset doit être déclaré explicitement : sans lui, un client qui ne
+  // suppose pas l'UTF-8 par défaut (ex. PowerShell) décode les accents du
+  // corps JSON en Latin-1 et affiche des caractères corrompus ("Ã©" pour "é").
+  private val json = `Content-Type`(MediaType.application.json, Charset.`UTF-8`)
 
   private def ok[A: Writer](a: A): IO[Response[IO]] =
     Ok(write(a)).map(_.withContentType(json))

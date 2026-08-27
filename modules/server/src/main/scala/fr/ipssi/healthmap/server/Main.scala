@@ -8,35 +8,41 @@ import org.http4s.server.middleware.{ErrorAction, Logger}
 
 import fr.ipssi.healthmap.server.api.ApiRoutes
 import fr.ipssi.healthmap.server.chat.ChatService
-import fr.ipssi.healthmap.server.data.{InMemoryProfessionalSource, ProfessionalSource}
+import fr.ipssi.healthmap.server.data.ProfessionalRepository
 import fr.ipssi.healthmap.server.geo.GeoJsonCache
 
 /** Point d'entrée du serveur.
   *
-  * La source de données est encore l'échantillon en mémoire : le lot B remplace
-  * `InMemoryProfessionalSource.stub` par l'implémentation DuckDB sans toucher aux
-  * routes, et le lot E remplace `ChatService.rulesBased` par le client Ollama.
+  * Lot B : la source de données est désormais `ProfessionalRepository`, qui
+  * lit `data/fichier_professionnels_avec_coords.parquet` et
+  * `data/communes.parquet` (département/région issus de la jointure, jamais
+  * dérivés du code postal) ; les routes n'ont pas changé. Le lot E remplace
+  * `ChatService.rulesBased` par le client Ollama.
   */
 object Main extends IOApp:
 
   private val defaultHost: Host = host"0.0.0.0"
   private val defaultPort: Port = port"8080"
 
+  private val professionalsPath = java.nio.file.Path.of("data", "fichier_professionnels_avec_coords.parquet")
+  private val communesPath      = java.nio.file.Path.of("data", "communes.parquet")
+
   def run(args: List[String]): IO[ExitCode] =
-    val source: ProfessionalSource = InMemoryProfessionalSource.stub
-    val chat: ChatService          = ChatService.rulesBased(source)
-    val geo                        = GeoJsonCache()
-
-    val routes = ApiRoutes(source, chat, geo) <+> StaticRoutes()
-
-    val app = Logger.httpApp(logHeaders = false, logBody = false)(
-      ErrorAction.httpApp(
-        routes.orNotFound,
-        (_, e) => IO.println(s"Erreur non rattrapée : ${e.getMessage}")
-      )
-    )
-
     for
+      source <- IO.blocking(ProfessionalRepository.load(professionalsPath, communesPath))
+      _ <- IO.println(source.joinStats.toString)
+      chat: ChatService = ChatService.rulesBased(source)
+      geo               = GeoJsonCache()
+
+      routes = ApiRoutes(source, chat, geo) <+> StaticRoutes()
+
+      app = Logger.httpApp(logHeaders = false, logBody = false)(
+        ErrorAction.httpApp(
+          routes.orNotFound,
+          (_, e) => IO.println(s"Erreur non rattrapée : ${e.getMessage}")
+        )
+      )
+
       _ <- geo.prefetch.handleErrorWith(e =>
         IO.println(s"Fonds GeoJSON non préchargés (${e.getMessage}), ils seront retentés à la demande.")
       )
