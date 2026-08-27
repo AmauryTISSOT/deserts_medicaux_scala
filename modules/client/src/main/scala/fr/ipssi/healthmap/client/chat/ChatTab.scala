@@ -104,7 +104,7 @@ object ChatTab:
             )
           )
         )
-      else Nil,
+      else List.empty[HtmlElement],
       div(
         cls := "hm-pastilles",
         bloc("Symptômes détectés", r.symptomes, "Aucun symptôme précis reconnu."),

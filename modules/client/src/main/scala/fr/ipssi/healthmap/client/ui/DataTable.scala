@@ -60,7 +60,7 @@ object DataTable:
         cls := "hm-table",
         thead(
           tr(
-            if rang then List(th(cls := "hm-rang", "Rang")) else Nil,
+            if rang then List(th(cls := "hm-rang", "Rang")) else List.empty[HtmlElement],
             colonnes.zipWithIndex.map { case (colonne, index) => enTete(colonne, index, etatTri) }
           )
         ),
@@ -71,7 +71,7 @@ object DataTable:
             else
               liste.zipWithIndex.map { case (ligne, index) =>
                 tr(
-                  if rang then List(td(cls := "hm-rang", (index + 1).toString)) else Nil,
+                  if rang then List(td(cls := "hm-rang", (index + 1).toString)) else List.empty[HtmlElement],
                   colonnes.map(colonne =>
                     td(cls.toggle("hm-num") := colonne.numerique, colonne.valeur(ligne))
                   )

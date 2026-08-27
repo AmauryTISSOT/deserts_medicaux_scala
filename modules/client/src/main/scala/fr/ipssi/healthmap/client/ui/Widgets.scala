@@ -34,5 +34,5 @@ object Widgets:
     div(
       cls := "hm-section",
       h3(titre),
-      if sousTitre.isEmpty then Nil else List(p(cls := "hm-muted", sousTitre))
+      if sousTitre.isEmpty then List.empty[HtmlElement] else List(p(cls := "hm-muted", sousTitre))
     )

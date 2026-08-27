@@ -10,31 +10,35 @@ import org.http4s.server.middleware.{ErrorAction, Logger}
 
 import fr.ipssi.healthmap.server.api.ApiRoutes
 import fr.ipssi.healthmap.server.chat.{OllamaChatService, OllamaClient, OllamaConfig}
-import fr.ipssi.healthmap.server.data.{InMemoryProfessionalSource, ProfessionalSource}
+import fr.ipssi.healthmap.server.data.{ProfessionalRepository, ProfessionalSource}
 import fr.ipssi.healthmap.server.geo.GeoJsonCache
 
-/** Point d'entrée du serveur.
+/** Point d'entrée du serveur — fusion des lots B et E.
   *
-  * La source de données est encore l'échantillon en mémoire : le lot B remplace
-  * `InMemoryProfessionalSource.stub` par l'implémentation DuckDB sans toucher aux
-  * routes.
-  *
-  * L'assistant est désormais `OllamaChatService`, adossé au client HTTP Ember.
-  * Si Ollama n'est pas lancé, il se replie sur `ChatService.rulesBased` : le
-  * serveur démarre et l'onglet assistant reste utilisable, avec un avertissement
-  * en tête de réponse.
+  *   - Source de données : `ProfessionalRepository` (lot B), qui lit
+  *     `data/fichier_professionnels_avec_coords.parquet` et
+  *     `data/communes.parquet` (département/région issus de la jointure, jamais
+  *     dérivés du code postal) ; les routes n'ont pas changé.
+  *   - Assistant : `OllamaChatService` (lot E), adossé au client HTTP Ember. Si
+  *     Ollama n'est pas lancé, il se replie sur `ChatService.rulesBased` : le
+  *     serveur démarre et l'onglet assistant reste utilisable, avec un
+  *     avertissement en tête de réponse.
   */
 object Main extends IOApp:
 
   private val defaultHost: Host = host"0.0.0.0"
   private val defaultPort: Port = port"8080"
 
+  private val professionalsPath = java.nio.file.Path.of("data", "fichier_professionnels_avec_coords.parquet")
+  private val communesPath      = java.nio.file.Path.of("data", "communes.parquet")
+
   def run(args: List[String]): IO[ExitCode] =
-    val source: ProfessionalSource = InMemoryProfessionalSource.stub
-    val geo                        = GeoJsonCache()
-    val ollama                     = OllamaConfig.fromEnv
+    val geo    = GeoJsonCache()
+    val ollama = OllamaConfig.fromEnv
 
     for
+      source <- IO.blocking(ProfessionalRepository.load(professionalsPath, communesPath))
+      _ <- IO.println(source.joinStats.toString)
       _ <- geo.prefetch.handleErrorWith(e =>
         IO.println(s"Fonds GeoJSON non préchargés (${e.getMessage}), ils seront retentés à la demande.")
       )

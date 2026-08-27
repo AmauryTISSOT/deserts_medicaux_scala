@@ -85,12 +85,47 @@ annoncée à l'équipe avant d'être poussée sur `main`.
 Le paramètre `professions` est une liste séparée par des virgules ; absent, il
 signifie « toutes professions ».
 
+> **Deux totaux, à ne pas confondre** (voir la doc de tête de `ProfessionalRepository`) :
+> - grain résolu (429 998 professionnels rattachés à une commune, GPS ou non) — `/api/professions`, `/api/regions`, `/api/departements`, `/api/coverage/:dept`
+> - grain géolocalisé (353 414, GPS non nul, sous-ensemble du premier) — `/api/map`, `/api/top-communes`
+
+## Régénérer data/communes.parquet
+
+`data/communes.parquet` (quelques Mo) est versionné dans Git ; sa source,
+`data/raw/communes-france-avec-polygon-2025.json` (référentiel des communes
+françaises enrichi — population, département, région, grille de densité,
+codes postaux — avec polygones, ~62 Mo), ne l'est pas (`.gitignore`,
+`data/raw/`) : à déposer à ce chemin avant de régénérer le Parquet.
+
+```bash
+sbt "server/runMain fr.ipssi.healthmap.server.data.pipeline.ConvertCommunes"
+```
+
+La commande imprime des diagnostics de sanité (nombre de communes, codes
+postaux distincts, communes corses, population totale) en face des valeurs
+attendues, avant d'écraser `data/communes.parquet`.
+
+## Régénérer STATISTIQUES_JOINTURE.md
+
+```bash
+sbt "server/runMain fr.ipssi.healthmap.server.data.pipeline.GenerateJoinReport"
+```
+
+Écrit `STATISTIQUES_JOINTURE.md` à la racine (versionné, comme les Parquet) :
+qualité de la jointure professionnels ↔ communes — total, correspondance
+exacte, repli, non résolu, en valeur et en pourcentage — sur le grain résolu
+(432 015) et sur le grain géolocalisé (353 414). À rejouer après une mise à
+jour de `data/fichier_professionnels_avec_coords.parquet` ou
+`data/communes.parquet`, pas à chaque exécution du serveur : sinon seule la
+date de mesure change dans le diff, pour rien.
+
 ## État
 
-Lots A (socle et build) et C (modèles partagés et API) livrés. La source de
-données est encore l'échantillon en mémoire `InMemoryProfessionalSource.stub` :
-le lot B la remplace par l'implémentation DuckDB sans toucher aux routes, et le
-lot E remplace `ChatService.rulesBased` par le client Ollama.
+Lots A (socle et build), B (données DuckDB) et C (modèles partagés et API)
+livrés. La source de données est `ProfessionalRepository` (DuckDB), branchée
+dans `Main` — `data/fichier_professionnels_avec_coords.parquet` et
+`data/communes.parquet`. Le lot E remplace `ChatService.rulesBased` par le
+client Ollama.
 
 ## Écarts assumés avec la version Python
 
@@ -101,6 +136,8 @@ lot E remplace `ChatService.rulesBased` par le client Ollama.
 | Conversion code postal → département unique (`ref.Geo`) | le Python en avait deux implémentations contradictoires |
 | GeoJSON téléchargés une fois et mis en cache | le Python rejouait un `requests.get` à chaque interaction |
 | Agrégats calculés une fois au démarrage | le Python rechargeait le Parquet à chaque onglet |
+| Arrondissements de Paris, Lyon et Marseille rattachés à leur `code_insee` réel (`arrondissementsPLM`) | le référentiel communes-france n'a qu'une ligne par ville, avec un code postal générique absent des données CNAM : sans ce complément d'espace de recherche, les 33 769 professionnels concernés disparaissaient des agrégats départementaux et régionaux |
+| `professions`/`total`/région/département/couverture/densité découplés du GPS (429 998 professionnels résolus à une commune, contre 353 414 pour la carte et le classement des communes) | 97,4 % des 78 601 professionnels sans coordonnées GPS se résolvent tout de même à une commune via `(code_postal, nom)` ; les exclure des agrégats territoriaux aurait été une perte sèche sans rapport avec la qualité de la jointure |
 
 ## Équipe
 
