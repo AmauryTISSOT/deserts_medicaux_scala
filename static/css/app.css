@@ -198,3 +198,16 @@ li{margin-bottom:6px}
 .hm-prose{max-width:760px}
 .hm-prose .hm-tablewrap{max-width:100%}
 .hm-prose .hm-table td{white-space:normal}
+
+/* Bascule Effectifs / Densité (onglet Régions et départements, lot D+B). */
+.hm-mesure{margin:0 0 16px}
+.hm-mesure-tete{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hm-mesure-label{font-size:.9rem;color:var(--muted)}
+.hm-segmente{display:inline-flex;border:1px solid var(--border);border-radius:9px;
+  background:var(--surface-2);padding:3px;gap:3px}
+.hm-segmente-btn{appearance:none;border:0;background:transparent;color:var(--text);
+  font:inherit;font-size:.88rem;padding:6px 14px;border-radius:7px;cursor:pointer;
+  transition:background .12s,color .12s}
+.hm-segmente-btn:hover{background:var(--surface)}
+.hm-segmente-btn.est-actif{background:var(--accent);color:#fff}
+.hm-segmente-btn.est-actif:hover{background:var(--accent)}

@@ -200,7 +200,7 @@ final class ProfessionalRepository private (conn: Connection) extends Profession
     query(sql)(rs => densityStat(rs.getString("code"), rs.getString("nom"), rs.getInt("effectif"), rs.getLong("population")))
 
   /** Densité pour 100 000 habitants, par département. */
-  def densityByDepartement(filter: Set[String]): List[DensityStat] =
+  override def densityByDepartement(filter: Set[String]): List[DensityStat] =
     val sql =
       s"""SELECT d.dep_code AS code, d.dep_nom AS nom, d.population AS population,
          |       COALESCE(e.effectif, 0) AS effectif
@@ -215,7 +215,7 @@ final class ProfessionalRepository private (conn: Connection) extends Profession
     query(sql)(rs => densityStat(rs.getString("code"), rs.getString("nom"), rs.getInt("effectif"), rs.getLong("population")))
 
   /** Densité pour 100 000 habitants, par région. */
-  def densityByRegion(filter: Set[String]): List[DensityStat] =
+  override def densityByRegion(filter: Set[String]): List[DensityStat] =
     val sql =
       s"""SELECT r.reg_nom AS nom, r.population AS population,
          |       COALESCE(e.effectif, 0) AS effectif

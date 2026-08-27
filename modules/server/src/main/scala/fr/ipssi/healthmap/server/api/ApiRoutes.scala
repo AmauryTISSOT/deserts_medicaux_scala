@@ -48,6 +48,12 @@ object ApiRoutes:
       case GET -> Root / "api" / "departements" :? ProfessionsParam(p) =>
         ok(source.byDepartement(filter(p)))
 
+      case GET -> Root / "api" / "density" / "regions" :? ProfessionsParam(p) =>
+        ok(source.densityByRegion(filter(p)))
+
+      case GET -> Root / "api" / "density" / "departements" :? ProfessionsParam(p) =>
+        ok(source.densityByDepartement(filter(p)))
+
       case GET -> Root / "api" / "top-communes" :? ProfessionsParam(p) +& LimitParam(l) =>
         ok(source.topCommunes(filter(p), l.getOrElse(10).max(1).min(100)))
 

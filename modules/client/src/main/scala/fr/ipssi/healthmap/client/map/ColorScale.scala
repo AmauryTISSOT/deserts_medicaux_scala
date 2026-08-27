@@ -3,9 +3,10 @@ package fr.ipssi.healthmap.client.map
 /** Échelle de couleur séquentielle par quantiles et modèle de légende associé.
   *
   * Logique pure (aucune dépendance Leaflet ni DOM) partagée par la couche de
-  * points et les deux choroplèthes. On reprend l'esprit du Python d'origine —
-  * Plasma pour les points, Viridis pour les choroplèthes — mais en classes
-  * discrètes : la légende est alors exacte plutôt qu'une barre continue.
+  * points et les deux choroplèthes. Les valeurs sont des `Double` : la même
+  * échelle sert les effectifs bruts (entiers) et la densité pour 100 000
+  * habitants (décimale), la mise en forme de la légende étant confiée à une
+  * fonction `format`.
   */
 object ColorScale:
 
@@ -22,35 +23,35 @@ object ColorScale:
 
   /** Échelle discrète.
     *
-    * @param breaks bornes supérieures (incluses) des `colors.size - 1` premières
-    *               classes ; la dernière classe est ouverte vers le haut.
+    * @param breaks bornes supérieures des `colors.size - 1` premières classes ;
+    *               la dernière classe est ouverte vers le haut.
     * @param colors une couleur par classe, de la plus faible à la plus forte.
     */
-  final case class Scale(breaks: Vector[Int], colors: Vector[String]):
+  final case class Scale(breaks: Vector[Double], colors: Vector[String]):
 
     /** Couleur d'une valeur : première classe dont la borne supérieure la couvre. */
-    def colorFor(value: Int): String =
+    def colorFor(value: Double): String =
       val idx = breaks.indexWhere(value <= _)
       colors(if idx < 0 then colors.size - 1 else idx)
 
     /** Légende, de la classe la plus faible à la plus forte : `(libellé, couleur)`. */
-    def legend: List[(String, String)] =
+    def legend(format: Double => String): List[(String, String)] =
       colors.indices.toList.map { i =>
         val label =
-          if breaks.isEmpty then fmt(0) + " et plus"
-          else if i == 0 then s"≤ ${fmt(breaks(0))}"
-          else if i == colors.size - 1 then s"≥ ${fmt(breaks(i - 1) + 1)}"
-          else s"${fmt(breaks(i - 1) + 1)} – ${fmt(breaks(i))}"
+          if breaks.isEmpty then "toutes valeurs"
+          else if i == 0 then s"≤ ${format(breaks.head)}"
+          else if i == colors.size - 1 then s"> ${format(breaks.last)}"
+          else s"${format(breaks(i - 1))} – ${format(breaks(i))}"
         label -> colors(i)
       }
 
-  /** Construit une échelle par quantiles à partir des valeurs observées.
+  /** Construit une échelle par quantiles à partir des valeurs observées (> 0).
     *
     * Chaque classe couvre environ `1 / palette.size` des valeurs. Les bornes en
-    * doublon (jeux de données peu variés) sont fusionnées, ce qui réduit
-    * proprement le nombre de classes et la légende avec.
+    * doublon (jeux peu variés) sont fusionnées, réduisant proprement le nombre
+    * de classes et la légende avec.
     */
-  def quantile(values: Iterable[Int], palette: Vector[String]): Scale =
+  def quantile(values: Iterable[Double], palette: Vector[String]): Scale =
     val sorted = values.filter(_ > 0).toVector.sorted
     if sorted.isEmpty then Scale(Vector.empty, Vector(palette.last))
     else
@@ -70,8 +71,12 @@ object ColorScale:
     else if count >= palette.size then palette
     else Vector.tabulate(count)(j => palette(math.round(j.toDouble * (palette.size - 1) / (count - 1)).toInt))
 
-  /** Entier groupé par milliers avec une espace fine, à la française (1 234). */
-  private def fmt(n: Int): String =
-    val s = math.abs(n).toString
-    val grouped = s.reverse.grouped(3).mkString(" ").reverse
+  /** Entier arrondi, groupé par milliers avec une espace fine (1 234). */
+  def entier(value: Double): String =
+    val n = math.round(value).toInt
+    val grouped = math.abs(n).toString.reverse.grouped(3).mkString(" ").reverse
     if n < 0 then s"-$grouped" else grouped
+
+  /** Densité à une décimale, à la française (234,5). */
+  def densite(value: Double): String =
+    f"$value%.1f".replace('.', ',')

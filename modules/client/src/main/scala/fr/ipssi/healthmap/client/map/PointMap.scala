@@ -29,7 +29,7 @@ object PointMap:
         group.foreach(map.removeLayer)
         legend.foreach(_.remove())
 
-        val scale = ColorScale.quantile(pts.map(_.nombrePros), ColorScale.plasma)
+        val scale = ColorScale.quantile(pts.map(_.nombrePros.toDouble), ColorScale.plasma)
         val lo    = pts.map(_.nombrePros).minOption.getOrElse(0)
         val hi    = pts.map(_.nombrePros).maxOption.getOrElse(0)
 
@@ -46,7 +46,7 @@ object PointMap:
         group = Some(g)
 
         if pts.nonEmpty then
-          legend = Some(LeafletMap.legendControl("Nb de pros", scale.legend).addTo(map))
+          legend = Some(LeafletMap.legendControl("Nb de pros", scale.legend(ColorScale.entier)).addTo(map))
           fit(map, pts)
       }(ctx.owner)
     }
@@ -59,7 +59,7 @@ object PointMap:
   /** Pastille colorée dimensionnée par l'effectif — un `divIcon`, donc clusterable. */
   private def icon(p: MapPoint, scale: ColorScale.Scale, lo: Int, hi: Int): DivIcon =
     val r     = radius(p.nombrePros, lo, hi)
-    val color = scale.colorFor(p.nombrePros)
+    val color = scale.colorFor(p.nombrePros.toDouble)
     val html =
       s"""<span style="display:block;width:${r}px;height:${r}px;border-radius:50%;""" +
         s"""background:$color;opacity:.85;border:1px solid rgba(0,0,0,.35);box-sizing:border-box"></span>"""

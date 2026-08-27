@@ -35,6 +35,14 @@ object ApiClient:
   def departements(filtre: Seq[String]): Future[List[DepartementCount]] =
     lire[List[DepartementCount]](Endpoints.departements(filtre))
 
+  /** Densité pour 100 000 habitants par région, pour la choroplèthe en mode densité. */
+  def densityRegions(filtre: Seq[String]): Future[List[DensityStat]] =
+    lire[List[DensityStat]](Endpoints.densityRegions(filtre))
+
+  /** Densité pour 100 000 habitants par département, pour la choroplèthe en mode densité. */
+  def densityDepartements(filtre: Seq[String]): Future[List[DensityStat]] =
+    lire[List[DensityStat]](Endpoints.densityDepartements(filtre))
+
   /** Classement des communes les mieux dotées. */
   def topCommunes(filtre: Seq[String], limite: Int): Future[List[CommuneCount]] =
     lire[List[CommuneCount]](Endpoints.topCommunes(filtre, limite))

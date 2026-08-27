@@ -34,6 +34,16 @@ case class CommuneCount(commune: String, codePostal: String, nombrePros: Int)
 object CommuneCount:
   given ReadWriter[CommuneCount] = macroRW
 
+/** Effectif, population et densité pour 100 000 habitants d'une zone (région ou
+  * département) — la vraie mesure de désert médical, rapportée à la population.
+  *
+  * Clé de jointure avec le GeoJSON : `nom` pour la choroplèthe régionale,
+  * `code` pour la départementale (comme [[RegionCount]] et [[DepartementCount]]).
+  */
+case class DensityStat(code: String, nom: String, effectif: Int, population: Long, pour100k: Double)
+object DensityStat:
+  given ReadWriter[DensityStat] = macroRW
+
 /** Analyse de couverture d'un département, équivalent de `analyze_region_coverage`. */
 case class CoverageReport(
     code: String,

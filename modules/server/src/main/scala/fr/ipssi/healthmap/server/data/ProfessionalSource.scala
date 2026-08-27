@@ -33,6 +33,17 @@ trait ProfessionalSource:
   /** Analyse de couverture d'un département, `None` si le code est hors référentiel. */
   def coverage(code: String): Option[CoverageReport]
 
+  /** Densité pour 100 000 habitants par région (mesure de désert médical).
+    *
+    * Implémentation par défaut vide : seule l'implémentation DuckDB (lot B)
+    * dispose de la population communale ; la source factice s'en passe sans
+    * empêcher les routes de compiler.
+    */
+  def densityByRegion(filter: Set[String]): List[DensityStat] = Nil
+
+  /** Densité pour 100 000 habitants par département. */
+  def densityByDepartement(filter: Set[String]): List[DensityStat] = Nil
+
 object ProfessionalSource:
 
   /** Seuils de qualification de la couverture, repris de `analyze_region_coverage`. */

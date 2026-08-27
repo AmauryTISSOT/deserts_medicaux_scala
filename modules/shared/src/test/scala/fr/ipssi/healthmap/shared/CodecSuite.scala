@@ -13,6 +13,9 @@ class CodecSuite extends munit.FunSuite:
     val dept = DepartementCount("2A", "Corse-du-Sud", "Corse", 34)
     assertEquals(read[DepartementCount](write(dept)), dept)
 
+    val densite = DensityStat("34", "Hérault", 2473, 1201883L, 205.8)
+    assertEquals(read[DensityStat](write(densite)), densite)
+
     val chat = ChatResponse("Consultez un généraliste.", List("généraliste"), List("fièvre"), false)
     assertEquals(read[ChatResponse](write(chat)), chat)
   }
@@ -27,4 +30,6 @@ class CodecSuite extends munit.FunSuite:
     assertEquals(Endpoints.topCommunes(Nil, 5), "/api/top-communes?limit=5")
     assertEquals(Endpoints.topCommunes(List("Médecin"), 5), "/api/top-communes?professions=M%C3%A9decin&limit=5")
     assertEquals(Endpoints.coverage("2A"), "/api/coverage/2A")
+    assertEquals(Endpoints.densityDepartements(), "/api/density/departements")
+    assertEquals(Endpoints.densityRegions(List("Médecin")), "/api/density/regions?professions=M%C3%A9decin")
   }

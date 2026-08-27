@@ -31,6 +31,10 @@ final class AppState:
   val departements: Var[List[DepartementCount]] = Var(Nil)
   val topCommunes: Var[List[CommuneCount]]     = Var(Nil)
 
+  /** Densité pour 100 000 habitants, pour le mode densité des choroplèthes. */
+  val regionsDensity: Var[List[DensityStat]]      = Var(Nil)
+  val departementsDensity: Var[List[DensityStat]] = Var(Nil)
+
   private val requetesEnCours: Var[Int] = Var(0)
   private var generation: Int           = 0
 
@@ -78,11 +82,13 @@ final class AppState:
     val courante = generation
     def actuelle: Boolean = courante == generation
 
-    requetesEnCours.update(_ + 4)
+    requetesEnCours.update(_ + 6)
     ApiClient.mapPoints(liste).onComplete(termine(v => if actuelle then points.set(v)))
     ApiClient.regions(liste).onComplete(termine(v => if actuelle then regions.set(v)))
     ApiClient.departements(liste).onComplete(termine(v => if actuelle then departements.set(v)))
     ApiClient.topCommunes(liste, 10).onComplete(termine(v => if actuelle then topCommunes.set(v)))
+    ApiClient.densityRegions(liste).onComplete(termine(v => if actuelle then regionsDensity.set(v)))
+    ApiClient.densityDepartements(liste).onComplete(termine(v => if actuelle then departementsDensity.set(v)))
 
   /** Coche ou décoche une profession. */
   def basculer(nom: String, retenue: Boolean): Unit =

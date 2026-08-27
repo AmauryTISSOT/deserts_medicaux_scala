@@ -84,13 +84,14 @@ object InfoTab:
           )
         )
       ),
-      Widgets.section("Limite connue"),
+      Widgets.section("Mesure de désert médical"),
       p(
-        "L'application compte des ",
+        "Les ",
         strong("effectifs bruts"),
-        " et non une densité pour 100 000 habitants : Paris arrive en tête parce qu'elle est peuplée, ",
-        "pas parce qu'elle est mieux dotée. Une mesure de désert médical suppose de rapporter ces ",
-        "effectifs à la population communale, disponible dans le jeu de données des communes."
+        " placent mécaniquement les zones peuplées en tête : Paris arrive première parce qu'elle est peuplée, ",
+        "pas parce qu'elle est mieux dotée. L'onglet « Régions et départements » propose donc une bascule vers la ",
+        strong("densité pour 100 000 habitants"),
+        ", rapportée à la population INSEE des communes — la vraie mesure de désert médical, indépendante de la taille de la population."
       ),
       Widgets.section("Équipe"),
       p("Adrien Fouquet, Amaury Tissot, Léa Druffin, Satya Minguez, Frédéric Fernandes Da Costa.")
