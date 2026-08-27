@@ -1,6 +1,6 @@
 # Statistiques de jointure professionnels ↔ communes
 
-Mesuré le 2026-08-26 par `ProfessionalRepository.load`. Régénéré par
+Mesuré le 2026-08-27 par `ProfessionalRepository.load`. Régénéré par
 `sbt "server/runMain fr.ipssi.healthmap.server.data.pipeline.GenerateJoinReport"`
 après toute mise à jour des Parquet sources — ne pas éditer à la main.
 

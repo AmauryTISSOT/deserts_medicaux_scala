@@ -60,7 +60,12 @@ lazy val server = project
     ),
     // Le serveur lit `static/` et `data/` à la racine du dépôt, pas dans modules/server.
     Compile / run / baseDirectory := (ThisBuild / baseDirectory).value,
-    Compile / run / fork := true
+    Compile / run / fork := true,
+    // Le lot B a ajouté des `main` de pipeline (ConvertCommunes, GenerateJoinReport)
+    // dans ce module : sans classe pointée, `server/run` et le packaging deviennent
+    // ambigus. On fige le point d'entrée applicatif ; les jobs de pipeline restent
+    // lançables via `server/runMain fr.ipssi.healthmap.server.data.pipeline.<Job>`.
+    Compile / mainClass := Some("fr.ipssi.healthmap.server.Main")
   )
 
 // ---------------------------------------------------------------------------
