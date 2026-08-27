@@ -11,25 +11,29 @@ import scala.util.{Failure, Success}
 /** Fabrique commune aux choroplèthes région et département.
   *
   * Elle télécharge le fond GeoJSON une fois (servi en local par le lot C, ce qui
-  * évite le CORS), teinte chaque entité selon l'effectif joint par une clé, et
-  * redessine à chaque changement du `Signal` de données. Les entités sans donnée
-  * restent en gris neutre.
+  * évite le CORS) et teinte chaque entité selon une valeur jointe par une clé.
+  * La valeur est un `Double` et son libellé est fourni par la `View` : la même
+  * carte affiche indifféremment un effectif brut ou une densité pour 100 000
+  * habitants, la bascule étant décidée par l'onglet (lot E). Les entités sans
+  * donnée restent en gris neutre.
   */
 object Choropleth:
 
-  /** @param joinKey  clé de jointure lue dans `feature.properties`
-    * @param keyOf    même clé, extraite du modèle
-    * @param countOf  effectif porté par le modèle
-    * @param tooltip  infobulle HTML, depuis `(properties, effectif)`
+  /** Une entité à colorer : `key` joint le GeoJSON, `label` titre l'infobulle. */
+  final case class Datum(key: String, label: String, value: Double)
+
+  /** Ce qu'affiche la carte à un instant donné : les données, le titre de
+    * légende et la façon de mettre en forme les valeurs (entier ou densité).
     */
-  def build[A](
-      data: Signal[List[A]],
+  final case class View(data: List[Datum], legendTitle: String, format: Double => String)
+
+  object View:
+    val vide: View = View(Nil, "", ColorScale.entier)
+
+  def build(
+      view: Signal[View],
       geoJsonUrl: String,
       joinKey: js.Dynamic => String,
-      keyOf: A => String,
-      countOf: A => Int,
-      legendTitle: String,
-      tooltip: (js.Dynamic, Int) => String,
       heightPx: Int = 640
   ): HtmlElement =
     val status = Var[Option[String]](Some("Chargement du fond cartographique…"))
@@ -38,29 +42,35 @@ object Choropleth:
       var geoData: Option[js.Any] = None
       var layer: Option[GeoJSON]  = None
       var legend: Option[Control] = None
-      var current: List[A]        = Nil
+      var current: View           = View.vide
 
       def redraw(): Unit = geoData.foreach { gj =>
         layer.foreach(map.removeLayer)
         legend.foreach(_.remove())
 
-        val counts = current.map(a => keyOf(a) -> countOf(a)).toMap
-        val scale  = ColorScale.quantile(counts.values, ColorScale.viridis)
+        val byKey = current.data.map(d => d.key -> d).toMap
+        val scale = ColorScale.quantile(current.data.map(_.value), ColorScale.viridis)
 
         val styleFn: js.Function1[js.Dynamic, js.Any] = feature =>
-          val c = counts.getOrElse(joinKey(feature), 0)
+          val couleur = byKey.get(joinKey(feature)) match
+            case Some(d) if d.value > 0 => scale.colorFor(d.value)
+            case _                      => ColorScale.noData
           js.Dynamic.literal(
-            fillColor = if c > 0 then scale.colorFor(c) else ColorScale.noData,
+            fillColor = couleur,
             weight = 1,
             color = "#7a7a7a",
-            fillOpacity = if c > 0 then 0.78 else 0.25,
+            fillOpacity = if byKey.contains(joinKey(feature)) then 0.78 else 0.25,
             opacity = 0.8
           )
 
         var geo: GeoJSON = null
         val onEach: js.Function2[js.Dynamic, js.Dynamic, Unit] = (feature, featureLayer) =>
-          val c = counts.getOrElse(joinKey(feature), 0)
-          featureLayer.bindTooltip(tooltip(feature, c), js.Dynamic.literal(sticky = true))
+          val infobulle = byKey.get(joinKey(feature)) match
+            case Some(d) =>
+              s"""<strong>${LeafletMap.esc(d.label)}</strong><br>${LeafletMap.esc(current.format(d.value))}"""
+            case None =>
+              s"""<strong>${LeafletMap.esc(prop(feature, "nom"))}</strong><br>aucune donnée"""
+          featureLayer.bindTooltip(infobulle, js.Dynamic.literal(sticky = true))
           featureLayer.on("mouseover", (_: js.Dynamic) => featureLayer.setStyle(js.Dynamic.literal(weight = 2.5, fillOpacity = 0.92)))
           featureLayer.on("mouseout", (_: js.Dynamic) => geo.resetStyle(featureLayer))
           ()
@@ -69,11 +79,11 @@ object Choropleth:
         geo.addTo(map)
         layer = Some(geo)
         map.fitBounds(geo.getBounds(), js.Dynamic.literal(padding = js.Array(12, 12), animate = false))
-        if current.nonEmpty then
-          legend = Some(LeafletMap.legendControl(legendTitle, scale.legend).addTo(map))
+        if current.data.nonEmpty then
+          legend = Some(LeafletMap.legendControl(current.legendTitle, scale.legend(current.format)).addTo(map))
       }
 
-      data.foreach { d => current = d; redraw() }(ctx.owner)
+      view.foreach { v => current = v; redraw() }(ctx.owner)
 
       dom.fetch(geoJsonUrl).flatMap(_.text()).onComplete {
         case Success(text) =>

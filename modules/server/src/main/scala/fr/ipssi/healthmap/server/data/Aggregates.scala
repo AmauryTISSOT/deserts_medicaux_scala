@@ -18,17 +18,6 @@ case class JoinStats(
   override def toString: String =
     s"JoinStats(total=$total, exact=$exact [$exactRate%], fallback=$fallback [$fallbackRate%], unresolved=$unresolved [$unresolvedRate%])"
 
-/** Effectif et densité pour 100 000 habitants d'une zone (commune,
-  * département ou région).
-  */
-case class DensityStat(
-  code: String,
-  nom: String,
-  effectif: Int,
-  population: Long,
-  pour100k: Double
-)
-
 /** Effectif et densité pour 100 000 habitants par type de territoire INSEE
   * (`grille_densite_texte` : grands centres urbains, ceintures urbaines,
   * bourgs ruraux, etc.).

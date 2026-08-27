@@ -16,9 +16,22 @@ object MapShowcase:
     val selected  = Var(Set("Médecin"))
     val activeTab = Var(0)
 
-    val points      = selected.signal.map(SampleData.mapPoints)
-    val regions     = selected.signal.map(SampleData.byRegion)
-    val departements = selected.signal.map(SampleData.byDepartement)
+    val points = selected.signal.map(SampleData.mapPoints)
+
+    val regionsView = selected.signal.map { sel =>
+      Choropleth.View(
+        SampleData.byRegion(sel).map(r => Choropleth.Datum(r.nom, r.nom, r.nombrePros.toDouble)),
+        "Pros par région",
+        ColorScale.entier
+      )
+    }
+    val departementsView = selected.signal.map { sel =>
+      Choropleth.View(
+        SampleData.byDepartement(sel).map(d => Choropleth.Datum(d.code, s"${d.nom} (${d.code})", d.nombrePros.toDouble)),
+        "Pros par département",
+        ColorScale.entier
+      )
+    }
 
     div(
       filterBar(selected),
@@ -29,8 +42,8 @@ object MapShowcase:
       tabBar(activeTab),
       child <-- activeTab.signal.map {
         case 0 => PointMap(points)
-        case 1 => RegionChoropleth(regions)
-        case _ => DepartementChoropleth(departements)
+        case 1 => RegionChoropleth(regionsView)
+        case _ => DepartementChoropleth(departementsView)
       }
     )
 

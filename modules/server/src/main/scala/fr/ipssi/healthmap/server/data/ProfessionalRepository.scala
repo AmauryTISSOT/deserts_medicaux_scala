@@ -57,14 +57,26 @@ import java.sql.{Connection, DriverManager, ResultSet}
   */
 final class ProfessionalRepository private (conn: Connection) extends ProfessionalSource:
 
+  // DuckDB JDBC n'accepte pas l'exécution concurrente de requêtes sur une même
+  // connexion (« Attempting to execute an unsuccessful or closed pending query
+  // result »). Or http4s traite les requêtes en parallèle et le client lot E en
+  // déclenche quatre d'un coup (carte, régions, départements, top communes) : on
+  // sérialise donc les accès. Les requêtes portent sur des tables pré-agrégées
+  // de quelques milliers de lignes au plus, le coût de la sérialisation est
+  // négligeable. (Alternative si le débit l'exigeait : une connexion dupliquée
+  // par requête via `DuckDBConnection.duplicate()`.)
+  private val lock = new AnyRef
+
   private def query[A](sql: String)(extract: ResultSet => A): List[A] =
-    val stmt = conn.createStatement()
-    try
-      val rs = stmt.executeQuery(sql)
-      val buf = collection.mutable.ListBuffer.empty[A]
-      while rs.next() do buf += extract(rs)
-      buf.toList
-    finally stmt.close()
+    lock.synchronized {
+      val stmt = conn.createStatement()
+      try
+        val rs = stmt.executeQuery(sql)
+        val buf = collection.mutable.ListBuffer.empty[A]
+        while rs.next() do buf += extract(rs)
+        buf.toList
+      finally stmt.close()
+    }
 
   private def queryOne[A](sql: String)(extract: ResultSet => A): Option[A] =
     query(sql)(extract).headOption
@@ -188,7 +200,7 @@ final class ProfessionalRepository private (conn: Connection) extends Profession
     query(sql)(rs => densityStat(rs.getString("code"), rs.getString("nom"), rs.getInt("effectif"), rs.getLong("population")))
 
   /** Densité pour 100 000 habitants, par département. */
-  def densityByDepartement(filter: Set[String]): List[DensityStat] =
+  override def densityByDepartement(filter: Set[String]): List[DensityStat] =
     val sql =
       s"""SELECT d.dep_code AS code, d.dep_nom AS nom, d.population AS population,
          |       COALESCE(e.effectif, 0) AS effectif
@@ -203,7 +215,7 @@ final class ProfessionalRepository private (conn: Connection) extends Profession
     query(sql)(rs => densityStat(rs.getString("code"), rs.getString("nom"), rs.getInt("effectif"), rs.getLong("population")))
 
   /** Densité pour 100 000 habitants, par région. */
-  def densityByRegion(filter: Set[String]): List[DensityStat] =
+  override def densityByRegion(filter: Set[String]): List[DensityStat] =
     val sql =
       s"""SELECT r.reg_nom AS nom, r.population AS population,
          |       COALESCE(e.effectif, 0) AS effectif

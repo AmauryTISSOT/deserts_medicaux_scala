@@ -24,6 +24,14 @@ object Endpoints:
   def departements(professions: Seq[String] = Nil): String =
     withProfessions(s"$base/departements", professions)
 
+  /** Densité pour 100 000 habitants par région (choroplèthe régionale, mode densité). */
+  def densityRegions(professions: Seq[String] = Nil): String =
+    withProfessions(s"$base/density/regions", professions)
+
+  /** Densité pour 100 000 habitants par département (choroplèthe départementale, mode densité). */
+  def densityDepartements(professions: Seq[String] = Nil): String =
+    withProfessions(s"$base/density/departements", professions)
+
   /** Classement des communes les mieux dotées. */
   def topCommunes(professions: Seq[String] = Nil, limit: Int = 10): String =
     val q = withProfessions(s"$base/top-communes", professions)
