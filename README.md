@@ -1,5 +1,12 @@
 # HealthMap — déserts médicaux (Scala)
 
+## Etudiant - Groupe 1
+- Amaury TISSOT
+- Léa DRUFFIN
+- Adrien FOUQUET
+- Satya MINGUEZ
+- Frédéric FERNANDES DA COSTA
+
 Portage en Scala 3 de l'application Python/Streamlit `open_data_health_map-` :
 cartographie de la répartition des professionnels de santé en France, à partir
 d'un jeu de 432 015 professionnels géolocalisés.
