@@ -7,9 +7,9 @@
 - Satya MINGUEZ
 - Frédéric FERNANDES DA COSTA
 
-Portage en Scala 3 de l'application Python/Streamlit `open_data_health_map-` :
-cartographie de la répartition des professionnels de santé en France, à partir
-d'un jeu de 432 015 professionnels géolocalisés.
+## Présentation du projet
+
+Portage en Scala 3 d'une application de cartographie de la répartition des professionnels de santé en France, à partir d'un jeu de 432 015 professionnels géolocalisés.
 
 ## Démarrage avec Docker
 
@@ -194,7 +194,3 @@ client Ollama.
 | Agrégats calculés une fois au démarrage | le Python rechargeait le Parquet à chaque onglet |
 | Arrondissements de Paris, Lyon et Marseille rattachés à leur `code_insee` réel (`arrondissementsPLM`) | le référentiel communes-france n'a qu'une ligne par ville, avec un code postal générique absent des données CNAM : sans ce complément d'espace de recherche, les 33 769 professionnels concernés disparaissaient des agrégats départementaux et régionaux |
 | `professions`/`total`/région/département/couverture/densité découplés du GPS (429 998 professionnels résolus à une commune, contre 353 414 pour la carte et le classement des communes) | 97,4 % des 78 601 professionnels sans coordonnées GPS se résolvent tout de même à une commune via `(code_postal, nom)` ; les exclure des agrégats territoriaux aurait été une perte sèche sans rapport avec la qualité de la jointure |
-
-## Équipe
-
-Adrien Fouquet · Amaury Tissot · Léa Druffin · Satya Minguez · Frédéric FERNANDES DA COSTA
