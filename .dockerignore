@@ -1,0 +1,31 @@
+# Artefacts de build
+target/
+*/target/
+modules/*/target/
+modules/*/*/target/
+project/target/
+project/project/
+.bsp/
+.bloop/
+.metals/
+.scala-build/
+
+# Bundle Scala.js : régénéré par `client/fullLinkJS` dans l'image
+static/js/
+
+# Cache GeoJSON : rempli au démarrage, monté en volume
+data/geo/
+data/raw/
+
+# Divers
+.git/
+.gitignore
+.idea/
+.vscode/
+*.log
+hs_err_pid*
+*.stackdump
+docker-compose.yml
+README.md
+plan-portage-scala.html
+STATISTIQUES_JOINTURE.md

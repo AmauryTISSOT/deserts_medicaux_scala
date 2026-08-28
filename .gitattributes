@@ -1,0 +1,5 @@
+# Fichiers consommés par Linux dans les conteneurs : des fins de ligne CRLF
+# feraient échouer `sh` sur le script d'entrée d'Ollama.
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.yml       text eol=lf
