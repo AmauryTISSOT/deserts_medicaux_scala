@@ -1,0 +1,65 @@
+services:
+
+  # Modèle de langage local, exposé sur le réseau interne uniquement.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: healthmap-ollama
+    environment:
+      OLLAMA_MODEL: qwen3:8b
+      # Garde le modèle chargé en VRAM entre deux questions : sans cela, chaque
+      # message rechargerait 5 Go depuis le disque.
+      OLLAMA_KEEP_ALIVE: 30m
+    volumes:
+      - ollama:/root/.ollama
+      - ./docker/ollama-entrypoint.sh:/usr/local/bin/ollama-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/ollama-entrypoint.sh"]
+    # Carte graphique NVIDIA. Sur une machine sans GPU exploitable, commentez ce
+    # bloc `deploy` : Ollama bascule sur le CPU, plus lent mais fonctionnel.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      # Sain seulement une fois le modèle téléchargé, pas dès que le port répond.
+      test: ["CMD-SHELL", "ollama list | grep -q '^qwen3:8b'"]
+      interval: 10s
+      timeout: 10s
+      # Le premier démarrage télécharge ~5 Go : on laisse 30 minutes avant de
+      # déclarer l'échec, sans pénaliser les démarrages suivants.
+      retries: 3
+      start_period: 30m
+    restart: unless-stopped
+
+  # Serveur http4s + bundle Scala.js.
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: healthmap-app
+    ports:
+      - "8080:8080"
+    environment:
+      HEALTHMAP_OLLAMA_URL: http://ollama:11434
+      HEALTHMAP_OLLAMA_MODEL: qwen3:8b
+      # qwen3 raisonne avant de répondre : 30 s (la valeur par défaut du code)
+      # ne suffisent pas pour une réponse complète.
+      HEALTHMAP_OLLAMA_TIMEOUT_S: "300"
+    volumes:
+      # Fonds GeoJSON téléchargés au premier démarrage, conservés ensuite.
+      - geojson:/app/data/geo
+    # `service_started` et non `service_healthy` : le premier démarrage
+    # télécharge le modèle pendant plusieurs minutes, et attendre bloquerait le
+    # `up`. Tant qu'Ollama n'est pas prêt, l'assistant répond via le repli par
+    # référentiel (`ChatService.rulesBased`) ; la carte et les statistiques,
+    # elles, sont disponibles immédiatement.
+    depends_on:
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  ollama:
+  geojson:

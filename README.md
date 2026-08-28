@@ -4,7 +4,54 @@ Portage en Scala 3 de l'application Python/Streamlit `open_data_health_map-` :
 cartographie de la répartition des professionnels de santé en France, à partir
 d'un jeu de 432 015 professionnels géolocalisés.
 
-## Démarrage
+## Démarrage avec Docker
+
+Seule voie qui livre l'assistant complet : un conteneur Ollama embarque le modèle
+`qwen3:8b` et l'expose au serveur.
+
+Prérequis : Docker Desktop, et pour l'accélération GPU une carte NVIDIA avec les
+pilotes à jour (le NVIDIA Container Toolkit est intégré à Docker Desktop sous
+Windows via WSL 2 ; sous Linux il s'installe séparément).
+
+```bash
+docker compose up -d
+```
+
+L'application est servie sur <http://localhost:8080>.
+
+Le premier lancement construit l'image (compilation Scala.js + serveur, plusieurs
+minutes) puis télécharge les ~5 Go du modèle en arrière-plan. La carte et les
+statistiques sont disponibles immédiatement ; tant que le modèle n'est pas
+téléchargé, l'assistant répond via l'orientation par référentiel, précédée d'un
+avertissement. Suivre l'avancement du téléchargement :
+
+```bash
+docker compose logs -f ollama
+```
+
+Vérifier que le modèle tourne bien sur le GPU — la colonne `PROCESSOR` doit
+indiquer `100% GPU` :
+
+```bash
+docker compose exec ollama ollama ps
+```
+
+Sans GPU exploitable, commenter le bloc `deploy:` du service `ollama` dans
+`docker-compose.yml` : Ollama bascule sur le CPU, plus lent mais fonctionnel.
+
+Arrêt, et remise à zéro complète (y compris les 5 Go du modèle) :
+
+```bash
+docker compose down
+docker compose down -v
+```
+
+Les réglages de l'assistant sont passés au serveur par variables d'environnement
+(`HEALTHMAP_OLLAMA_URL`, `HEALTHMAP_OLLAMA_MODEL`, `HEALTHMAP_OLLAMA_TIMEOUT_S`) ;
+changer de modèle se fait en éditant `OLLAMA_MODEL`, `HEALTHMAP_OLLAMA_MODEL` et
+le test du `healthcheck` dans `docker-compose.yml`.
+
+## Démarrage en local (sbt)
 
 Prérequis : JDK 21 et sbt (`winget install EclipseAdoptium.Temurin.21.JDK sbt.sbt`),
 Node pour l'édition de liens Scala.js.
@@ -13,7 +60,9 @@ Node pour l'édition de liens Scala.js.
 sbt dev          # compile le client puis démarre le serveur
 ```
 
-L'application est servie sur <http://localhost:8080>.
+L'application est servie sur <http://localhost:8080>. L'assistant suppose un
+Ollama joignable sur `http://localhost:11434` ; à défaut il se replie sur
+l'orientation par référentiel.
 
 Autres commandes :
 
